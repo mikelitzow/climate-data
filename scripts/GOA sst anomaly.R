@@ -11,7 +11,7 @@ library(ggplot2)
 
 
 # script for calculating GOA sst anomalies wrt 1951-1980
-download.file("https://coastwatch.pfeg.noaa.gov/erddap/griddap/nceiErsstv5.nc?sst[(1950-01-01):1:(2020-8-01T00:00:00Z)][(0.0):1:(0.0)][(54):1:(62)][(200):1:(226)]", "~temp")
+# download.file("https://coastwatch.pfeg.noaa.gov/erddap/griddap/nceiErsstv5.nc?sst[(1950-01-01):1:(2020-8-01T00:00:00Z)][(0.0):1:(0.0)][(54):1:(62)][(200):1:(226)]", "~temp")
 
 # paste into browser for windows!
 
@@ -53,10 +53,50 @@ dimnames(SST) <- list(as.character(d), paste("N", lat, "E", lon, sep=""))
 BB <- c("N58E200", "N58E202", "N56E200")
 SST[,BB] <- NA
 
+# and check
+temp.mean <- colMeans(SST, na.rm=T)
+z <- t(matrix(temp.mean,length(y)))  
+image.plot(x,y,z, col=oceColorsPalette(64), xlim=c(195,230), ylim=c(53,62))
+contour(x, y, z, add=T)  
+map('world2Hires',c('Canada', 'usa'), fill=T,xlim=c(130,250), ylim=c(20,66),add=T, lwd=1, col="lightyellow3")
+
+
+###################################################
+# WGOA for cod/pollock paper
+
+drop <- lon > 212 | lat < 56
+wSST <- SST
+wSST[,drop] <- NA
+
+# and check
+temp.mean <- colMeans(wSST, na.rm=T)
+z <- t(matrix(temp.mean,length(y)))  
+image.plot(x,y,z, col=oceColorsPalette(64), xlim=c(195,230), ylim=c(53,62))
+contour(x, y, z, add=T)  
+map('world2Hires',c('Canada', 'usa'), fill=T,xlim=c(130,250), ylim=c(20,66),add=T, lwd=1, col="lightyellow3")
+
 # calculate monthly anomaly
 
+wSST <- rowMeans(wSST, na.rm = T)
+
+# and Apr-Jun
 yr <- as.numeric(as.character(years(d)))
 m <- months(d)
+apr.jun.m <- m[m %in% c("Apr", "May", "Jun")]
+apr.jun.yr <- yr[m %in% c("Apr", "May", "Jun")]
+
+apr.jun.wSST <- wSST[m %in% c("Apr", "May", "Jun")]
+apr.jun.wSST <- tapply(apr.jun.wSST, apr.jun.yr, mean)
+
+xprt <- data.frame(year=1950:2020,
+                   apr.jun.wSST=apr.jun.wSST)
+
+ggplot(xprt, aes(year, apr.jun.wSST)) +
+  geom_line() +
+  geom_point()
+
+write.csv(xprt, "output data/wgoa.apr.jun.sst.csv", row.names = F)
+
 # f <- function(x) tapply(x, m, mean)
 # mu <- apply(SST, 2, f)	# Compute monthly means for each time series (location)
 # 
@@ -71,6 +111,7 @@ m <- months(d)
 # 
 # anom <- SST - mu # Compute matrix of anomalies!
 
+# and winter for GOA-wide
 SST <- rowMeans(SST, na.rm = T)
  
 
