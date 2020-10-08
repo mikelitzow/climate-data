@@ -68,6 +68,8 @@ drop <- lon > 212 | lat < 56
 wSST <- SST
 wSST[,drop] <- NA
 
+drop <- 
+
 # and check
 temp.mean <- colMeans(wSST, na.rm=T)
 z <- t(matrix(temp.mean,length(y)))  
