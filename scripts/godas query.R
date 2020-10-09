@@ -279,6 +279,8 @@ ggplot(plot.dat, aes(year, value, color=name)) +
   geom_point() +
   scale_color_manual(values=cb[c(2,4)])
 
+
+
 ##
 
 # summarize Jan-April 105m
@@ -309,9 +311,22 @@ ggplot(plot.anom, aes(year, value, color=name)) +
   geom_point() +
   scale_color_manual(values=cb[c(2,4)])
 
+save.dat <- godas.anom
+
+save.dat$mean.anom <- apply(save.dat[,2:3], 1, mean)
+
+plot.dat <- save.dat %>%
+  pivot_longer(cols = -year)
+
+ggplot(plot.dat, aes(year, value, color=name)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(values=cb[c(2:4)])
+
+write.csv(save.dat, "output data/godas anomalies.csv")
 
 #################
-
+# old stuff below!
 m2 <- months(d2)
 yr2 <- years(d2)
 
