@@ -7,11 +7,11 @@ library(mapdata)
 library(chron)
 library(fields)
 library(ggplot2)
-
+library(oce)
 
 
 # script for calculating GOA sst anomalies wrt 1951-1980
-# download.file("https://coastwatch.pfeg.noaa.gov/erddap/griddap/nceiErsstv5.nc?sst[(1950-01-01):1:(2020-8-01T00:00:00Z)][(0.0):1:(0.0)][(54):1:(62)][(200):1:(226)]", "~temp")
+# download.file("https://coastwatch.pfeg.noaa.gov/erddap/griddap/nceiErsstv5.nc?sst[(1950-01-01):1:(2021-8-01T00:00:00Z)][(0.0):1:(0.0)][(54):1:(62)][(200):1:(226)]", "~temp")
 
 # paste into browser for windows!
 
@@ -19,7 +19,7 @@ library(ggplot2)
 # load and process SST data
 # nc <- nc_open("~temp")
 
-nc <- nc_open("downloads/nceiErsstv5_9cde_042e_b364.nc")
+nc <- nc_open("downloads/nceiErsstv5_1fbf_1ae0_53f2.nc")
 
 # extract dates
 
@@ -68,14 +68,15 @@ drop <- lon > 212 | lat < 56
 wSST <- SST
 wSST[,drop] <- NA
 
-drop <- 
 
-# and check
+# and check - save spatial domain map
+png("./figs/wgoa.ersstv5.domain.annual.means.png", 6, 4, units = 'in', res = 300)
 temp.mean <- colMeans(wSST, na.rm=T)
 z <- t(matrix(temp.mean,length(y)))  
 image.plot(x,y,z, col=oceColorsPalette(64), xlim=c(195,230), ylim=c(53,62))
 contour(x, y, z, add=T)  
 map('world2Hires',c('Canada', 'usa'), fill=T,xlim=c(130,250), ylim=c(20,66),add=T, lwd=1, col="lightyellow3")
+dev.off()
 
 # calculate monthly anomaly
 
@@ -90,7 +91,7 @@ apr.jun.yr <- yr[m %in% c("Apr", "May", "Jun")]
 apr.jun.wSST <- wSST[m %in% c("Apr", "May", "Jun")]
 apr.jun.wSST <- tapply(apr.jun.wSST, apr.jun.yr, mean)
 
-xprt <- data.frame(year=1950:2020,
+xprt <- data.frame(year=1950:2021,
                    apr.jun.wSST=apr.jun.wSST)
 
 ggplot(xprt, aes(year, apr.jun.wSST)) +
@@ -99,6 +100,21 @@ ggplot(xprt, aes(year, apr.jun.wSST)) +
 
 write.csv(xprt, "output data/wgoa.apr.jun.sst.csv", row.names = F)
 
+ # now JFM western GOA
+jan.mar.m <- m[m %in% c("Jan", "Feb", "Mar")]
+jan.mar.yr <- yr[m %in% c("Jan", "Feb", "Mar")]
+
+jan.mar.wSST <- wSST[m %in% c("Jan", "Feb", "Mar")]
+jan.mar.wSST <- tapply(jan.mar.wSST, jan.mar.yr, mean)
+
+xprt <- data.frame(year=1950:2021,
+                   jan.feb.mar.wSST=jan.mar.wSST)
+
+ggplot(xprt, aes(year, jan.feb.mar.wSST)) +
+  geom_line() +
+  geom_point()
+
+write.csv(xprt, "output data/wgoa.jan.mar.sst.csv", row.names = F)
 # f <- function(x) tapply(x, m, mean)
 # mu <- apply(SST, 2, f)	# Compute monthly means for each time series (location)
 # 
