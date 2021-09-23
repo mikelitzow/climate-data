@@ -108,13 +108,13 @@ jan.mar.wSST <- wSST[m %in% c("Jan", "Feb", "Mar")]
 jan.mar.wSST <- tapply(jan.mar.wSST, jan.mar.yr, mean)
 
 xprt <- data.frame(year=1950:2021,
-                   jan.feb.mar.wSST=jan.mar.wSST)
+                   jan.feb.mar.SST=jan.mar.wSST)
 
-ggplot(xprt, aes(year, jan.feb.mar.wSST)) +
+ggplot(xprt, aes(year, jan.feb.mar.SST)) +
   geom_line() +
   geom_point()
 
-write.csv(xprt, "output data/wgoa.jan.mar.sst.csv", row.names = F)
+write.csv(xprt, "output data/wgoa.jan.feb.mar.sst.csv", row.names = F)
 
 # f <- function(x) tapply(x, m, mean)
 # mu <- apply(SST, 2, f)	# Compute monthly means for each time series (location)
