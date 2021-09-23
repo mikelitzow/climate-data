@@ -115,6 +115,7 @@ ggplot(xprt, aes(year, jan.feb.mar.wSST)) +
   geom_point()
 
 write.csv(xprt, "output data/wgoa.jan.mar.sst.csv", row.names = F)
+
 # f <- function(x) tapply(x, m, mean)
 # mu <- apply(SST, 2, f)	# Compute monthly means for each time series (location)
 # 
