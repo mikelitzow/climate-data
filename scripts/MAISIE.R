@@ -92,7 +92,7 @@ ggplot(dat, aes(winter.day, Bering/1e4, group = winter, color = period)) +
   geom_line(lwd = dat$line.width) +
   scale_color_manual(values = c("black", "grey", cb[6])) +
   labs(x = "Winter day (September 1 = day 1)",
-       y = expression(Ice~extent~(10^4)~km^2),
+       y = expression(Ice~extent~(10^4~km^2)),
        title = "Bering Sea ice extent",
        subtitle = "MAISIE data, NSIDC") +
   theme(legend.title = element_blank(),
