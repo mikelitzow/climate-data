@@ -79,13 +79,13 @@ dat <- rbind(dat, clim.dat)
 
 dat$period <- case_when(
   
-  dat$winter %in% 2006:2021 ~ "2006-2021",
+  dat$winter %in% 2006:2023 ~ "2006-2023",
   dat$winter == "mean" ~ "2006-2013 mean",
-  dat$winter == 2022 ~ "2022"
+  dat$winter == 2024 ~ "2024"
 )
   
 # set line width for plot
-dat$line.width <- if_else(dat$winter %in% 2006:2021, 0.3,
+dat$line.width <- if_else(dat$winter %in% 2006:2022, 0.3,
                           if_else(dat$winter == "mean", 0.8, 1))
 
 ggplot(dat, aes(winter.day, Bering/1e4, group = winter, color = period)) +
@@ -97,5 +97,17 @@ ggplot(dat, aes(winter.day, Bering/1e4, group = winter, color = period)) +
        subtitle = "MAISIE data, NSIDC") +
   theme(legend.title = element_blank(),
         legend.position = c(0.2, 0.8))
+
+no_mean <- dat %>%
+  filter(!winter == "mean")
+
+ggplot(no_mean, aes(winter.day, Bering/1e4, group = winter, color = winter)) +
+  geom_line() +
+  scale_color_viridis_d() +
+  labs(x = "Winter day (September 1 = day 1)",
+       y = expression(Ice~extent~(10^4~km^2)),
+       title = "Bering Sea ice extent",
+       subtitle = "MAISIE data, NSIDC") +
+  theme(legend.title = element_blank())
 
 ggsave("./figs/maisie.png", width = 5, height = 4, units = 'in')
