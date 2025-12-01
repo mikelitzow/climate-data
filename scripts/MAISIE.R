@@ -81,7 +81,9 @@ dat$period <- case_when(
   
   dat$winter %in% 2006:2023 ~ "2006-2023",
   dat$winter == "mean" ~ "2006-2013 mean",
-  dat$winter == 2024 ~ "2024"
+  dat$winter == 2024 ~ "2024",
+  dat$winter == 2025 ~ "2025",
+  dat$winter == 2026 ~ "2026"
 )
   
 # set line width for plot
@@ -90,7 +92,7 @@ dat$line.width <- if_else(dat$winter %in% 2006:2022, 0.3,
 
 ggplot(dat, aes(winter.day, Bering/1e4, group = winter, color = period)) +
   geom_line(lwd = dat$line.width) +
-  scale_color_manual(values = c("black", "grey", cb[6])) +
+  scale_color_manual(values = c("black", "grey", cb[6], cb[4], cb[7])) +
   labs(x = "Winter day (September 1 = day 1)",
        y = expression(Ice~extent~(10^4~km^2)),
        title = "Bering Sea ice extent",
