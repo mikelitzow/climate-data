@@ -12,22 +12,25 @@ cb <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E
 
 
 # identify most recent month/date for desired data
-last_month <- 1
-last_year <- 2024
+last_month <- 11
+last_year <- 2025
 
-# # define URL
+# define URL
+URL <- 
+  "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nceiErsstv5.nc?sst%5B(1920-01-01):1:(2025-11-15T00:00:00Z)%5D%5B(0.0):1:(0.0)%5D%5B(20):1:(66)%5D%5B(110):1:(250)%5D"
+
 # URL <-
-#   paste("https://apdrc.soest.hawaii.edu/erddap/griddap/hawaii_soest_31a3_72d5_401e.nc?sst[(1920-01-15):1:(",
-#         last_year, "-", last_month, "-15)][(20):1:(66)][(110):1:(250)]", sep = "")
-# 
-# # download ERSSTv5 data
+  # paste("https://apdrc.soest.hawaii.edu/erddap/griddap/hawaii_soest_31a3_72d5_401e.nc?sst[(1920-01-15):1:(",
+        # last_year, "-", last_month, "-15)][(20):1:(66)][(110):1:(250)]", sep = "")
+
+# download ERSSTv5 data
 # download.file(URL, "./downloads/ERSST.nc")
 
 # load data
+nc <- nc_open("./downloads/nceiErsstv5_17a9_06de_e3f8.nc")
+# nc <- nc_open("./downloads/hawaii_soest_31a3_72d5_401e_4e48_f10a_e9b0.nc")
 
-nc <- nc_open("./downloads/hawaii_soest_31a3_72d5_401e_4e48_f10a_e9b0.nc")
-
-nc <- nc_open("./downloads/hawaii_soest_31a3_72d5_401e_4a7c_bdaf_7af6.nc")
+# nc <- nc_open("./downloads/hawaii_soest_31a3_72d5_401e_4a7c_bdaf_7af6.nc")
 
 # process
 
@@ -208,6 +211,31 @@ ggplot(ersst_monthly_anomalies, aes(dec.year, anomaly)) +
   theme(axis.title.x = element_blank()) + 
   ylab("Anomaly (°C, 1920-1949 climatology)")
 
+
+# monthly ar1 values for 1950-present
+ar1 <- ersst_monthly_anomalies %>%
+  filter(year >= 1950) %>%
+  mutate(era = as.factor(
+           case_when(year %in% 1950:1988 ~ "1950-1988",
+                     year %in% 1989:1999 ~ "1989-1999",
+                     year %in% 2000:2025 ~ "2000-2025"))) %>%
+  group_by(region, era) %>%
+  reframe(ar1 = acf(anomaly, lag.max = 60, plot = F)$acf) %>%
+  mutate(lag = rep(0:60, 9)) 
+
+
+# and plot
+ggplot(ar1, aes(lag, ar1, color = era)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~region, ncol = 1) +
+  geom_hline(yintercept = 0, lty = 2) +
+  xlab("Lag (months)") +
+  scale_x_continuous(breaks = c(0, 12, 24, 36, 48, 60))
+
+# pretty wild pattern! 
+
+
 ## calculate annual anomalies
 ersst_annual_anomalies <- ersst_monthly_anomalies %>%
   dplyr::group_by(region, year) %>%
@@ -215,7 +243,7 @@ ersst_annual_anomalies <- ersst_monthly_anomalies %>%
   mutate(year = as.numeric(as.character(year)))
 
 # and plot
-ggplot(filter(ersst_annual_anomalies, year < 2024), aes(year, annual_anomaly)) +
+ggplot(filter(ersst_annual_anomalies, year < 2025), aes(year, annual_anomaly)) +
   geom_line() +
   geom_point() +
   geom_smooth(method = "gam", se = F) +
