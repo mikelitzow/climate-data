@@ -234,7 +234,41 @@ ggplot(ar1, aes(lag, ar1, color = era)) +
   scale_x_continuous(breaks = c(0, 12, 24, 36, 48, 60))
 
 # pretty wild pattern! 
+# detrend and see if the pattern remains
 
+detr.ar1 <- ersst_monthly_anomalies %>%
+  filter(year >= 1950) %>%
+  group_by(region) %>%
+  reframe(time_step = 1:n(),
+    detr.anom = resid(lm(anomaly ~ dec.year)))
+
+# plot to check I'm coding correctly
+ggplot(detr.ar1, aes(time_step, detr.anom)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 0) +
+  facet_wrap(~region, scales = "free")
+
+detr.ar1 <- detr.ar1 %>%
+  mutate(year = floor(1950+(time_step-0.5)/12),
+    era = as.factor(
+    case_when(year %in% 1950:1988 ~ "1950-1988",
+              year %in% 1989:1999 ~ "1989-1999",
+              year %in% 2000:2025 ~ "2000-2025"))) %>%
+  group_by(region, era) %>%
+  reframe(ar1 = acf(detr.anom, lag.max = 60, plot = F)$acf) %>%
+  mutate(lag = rep(0:60, 9)) 
+
+
+# and plot
+ggplot(detr.ar1, aes(lag, ar1, color = era)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~region, ncol = 1) +
+  geom_hline(yintercept = 0, lty = 2) +
+  xlab("Lag (months)") +
+  ylab("ar1 (detrended anomalies)") +
+  scale_x_continuous(breaks = c(0, 12, 24, 36, 48, 60))
 
 ## calculate annual anomalies
 ersst_annual_anomalies <- ersst_monthly_anomalies %>%
@@ -243,7 +277,7 @@ ersst_annual_anomalies <- ersst_monthly_anomalies %>%
   mutate(year = as.numeric(as.character(year)))
 
 # and plot
-ggplot(filter(ersst_annual_anomalies, year < 2025), aes(year, annual_anomaly)) +
+ggplot(filter(ersst_annual_anomalies), aes(year, annual_anomaly)) +
   geom_line() +
   geom_point() +
   geom_smooth(method = "gam", se = F) +
@@ -252,6 +286,157 @@ ggplot(filter(ersst_annual_anomalies, year < 2025), aes(year, annual_anomaly)) +
   scale_x_continuous(breaks = seq(1920, 2020, 10)) +
   theme(axis.title.x = element_blank()) + 
   ylab("Anomaly (°C, 1920-1949 climatology)")
+
+
+
+# now plot annual ar1 values by era, for non-detrended and detrended data
+
+# annual ar1 values for 1950-present
+annual.ar1 <- ersst_annual_anomalies %>%
+  filter(year >= 1950) %>%
+  mutate(era = as.factor(
+    case_when(year %in% 1950:1988 ~ "1950-1988",
+              year %in% 1989:1999 ~ "1989-1999",
+              year %in% 2000:2025 ~ "2000-2025"))) %>%
+  group_by(region, era) %>%
+  reframe(ar1 = acf(annual_anomaly, lag.max = 5, plot = F)$acf) %>%
+  mutate(lag = rep(0:5, 9)) 
+
+
+# and plot
+ggplot(annual.ar1, aes(lag, ar1, color = era)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~region, ncol = 1) +
+  geom_hline(yintercept = 0, lty = 2) +
+  xlab("Lag (years)") 
+
+# detrend 
+
+detr.annual.ar1 <- ersst_annual_anomalies %>%
+  filter(year >= 1950) %>%
+  group_by(region) %>%
+  reframe(time_step = 1:n(),
+          detr.anom = resid(lm(annual_anomaly ~ year)))
+
+# plot to check I'm coding correctly
+ggplot(detr.annual.ar1, aes(time_step, detr.anom)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 0) +
+  facet_grid(~region)
+
+detr.annual.ar1 <- detr.annual.ar1 %>%  
+  mutate(year = time_step + 1949,
+          era = as.factor(
+  case_when(year %in% 1950:1988 ~ "1950-1988",
+            year %in% 1989:1999 ~ "1989-1999",
+            year %in% 2000:2025 ~ "2000-2025"))) %>%
+  group_by(region, era) %>%
+  reframe(ar1 = acf(detr.anom, lag.max = 5, plot = F)$acf) %>%
+  mutate(lag = rep(0:5, 9)) 
+
+
+# and plot
+ggplot(detr.annual.ar1, aes(lag, ar1, color = era)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~region, ncol = 1) +
+  geom_hline(yintercept = 0, lty = 2) +
+  xlab("Lag (years)") +
+  ylab("ar1 (detrended anomalies)") 
+
+
+# now plot winter (NDJFM) mean anomalies
+
+## calculate annual anomalies
+ersst_winter_anomalies <- ersst_monthly_anomalies %>%
+  filter(month %in% c("Nov", "Dec", "Jan", "Feb", "Mar")) %>%
+  mutate(year = as.numeric(as.character(year)), 
+         winter.year = if_else(month %in% c("Nov", "Dec"), year+1, year)) %>%
+  dplyr::group_by(region, winter.year) %>%
+  dplyr::summarise(winter_anomaly = mean(anomaly, na.rm = T)) 
+
+# and plot
+ggplot(filter(ersst_winter_anomalies, winter.year < 2026), aes(winter.year, winter_anomaly)) +
+  geom_line() +
+  geom_point() +
+  geom_smooth(method = "gam", se = F) +
+  facet_wrap(~region, scales = "free_y", ncol = 1) +
+  geom_hline(yintercept = 0, lty = 2) + 
+  scale_x_continuous(breaks = seq(1920, 2020, 10)) +
+  theme(axis.title.x = element_blank()) + 
+  ylab("Anomaly (°C, 1920-1949 climatology)")
+
+# now plot winter ar1 values by era, for non-detrended and detrended data
+
+# winter ar1 values for 1950-present
+winter.ar1 <- ersst_winter_anomalies %>%
+  filter(winter.year %in% 1950:2025) %>%
+  mutate(era = as.factor(
+    case_when(winter.year %in% 1950:1988 ~ "1950-1988",
+              winter.year %in% 1989:1999 ~ "1989-1999",
+              winter.year %in% 2000:2025 ~ "2000-2025"))) %>%
+  group_by(region, era) %>%
+  reframe(ar1 = acf(winter_anomaly, lag.max = 5, plot = F)$acf) %>%
+  mutate(lag = rep(0:5, 9)) 
+
+
+# and plot
+ggplot(winter.ar1, aes(lag, ar1, color = era)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~region, ncol = 1) +
+  geom_hline(yintercept = 0, lty = 2) +
+  xlab("Lag (years)") +
+  ylab("Winter ar1")
+
+# detrend 
+
+detr.winter.ar1 <- ersst_winter_anomalies %>%
+  filter(winter.year %in% 1950:2025) %>%
+  group_by(region) %>%
+  reframe(time_step = 1:n(),
+          detr.anom = resid(lm(winter_anomaly ~ winter.year)))
+
+# plot to check I'm coding correctly
+ggplot(detr.winter.ar1, aes(time_step, detr.anom)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 0) +
+  facet_grid(~region)
+
+detr.winter.ar1 <- detr.winter.ar1 %>%  
+  mutate(winter.year = time_step + 1949,
+         era = as.factor(
+           case_when(winter.year %in% 1950:1988 ~ "1950-1988",
+                     winter.year %in% 1989:1999 ~ "1989-1999",
+                     winter.year %in% 2000:2025 ~ "2000-2025"))) %>%
+  group_by(region, era) %>%
+  reframe(ar1 = acf(detr.anom, lag.max = 5, plot = F)$acf) %>%
+  mutate(lag = rep(0:5, 9)) 
+
+
+# and plot
+ggplot(detr.winter.ar1, aes(lag, ar1, color = era)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~region, ncol = 1) +
+  geom_hline(yintercept = 0, lty = 2) +
+  xlab("Lag (years)") +
+  ylab("ar1 (detrended anomalies)") 
+
+
+# now plot winter (NDJFM) mean anomalies
+
+
+
+
+
+
+
+
+
 
 
 # get rate of change for EBS during 2000-2023
